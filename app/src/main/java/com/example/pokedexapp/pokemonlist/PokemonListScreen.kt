@@ -1,11 +1,18 @@
 package com.example.pokedexapp.pokemonlist
 
+import android.graphics.drawable.BitmapDrawable
+import android.media.Image
 import android.widget.Space
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -25,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -40,11 +49,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImagePainter
+import coil.compose.AsyncImagePainter.*
+import coil.compose.AsyncImagePainter.State.Empty.painter
 import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.pokedexapp.R
 import com.example.pokedexapp.data.models.PokedexListEntry
 import com.example.pokedexapp.ui.theme.RobotoCondensed
+import com.example.pokedexapp.util.Resource
 
 @Composable
 fun PokemonListScreen(
@@ -71,6 +86,8 @@ fun PokemonListScreen(
             ) {
 
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            PokemonList(navController = navController)
         }
     }
 }
@@ -119,6 +136,31 @@ fun SearchBar(
 }
 
 @Composable
+fun PokemonList(
+    navController: NavController,
+    viewModel: PokemonListViewModel = hiltViewModel()
+) {
+    val pokemonList by remember { viewModel.pokemonList }
+    val endReached by remember { viewModel.endReached }
+    val loadError by remember { viewModel.loadError }
+    val isLoading by remember { viewModel.isLoading }
+
+    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+        val itemCount = if(pokemonList.size % 2 == 0) {
+            pokemonList.size / 2
+        } else {
+            pokemonList.size / 2 + 1
+        }
+        items(itemCount) {
+            if(it >= itemCount - 1 && !endReached) {
+                viewModel.loadPokemonPaginated()
+            }
+            PokedexRow(rowIndex = it, entries = pokemonList, navController = navController)
+        }
+    }
+}
+
+@Composable
 fun PokedexEntry(
     entry: PokedexListEntry,
     navController: NavController,
@@ -155,16 +197,36 @@ fun PokedexEntry(
                     .data(entry.imageUrl)
                     .crossfade(true)
                     .build(),
+
                 contentDescription = entry.pokemonName,
                 modifier = Modifier
                     .size(120.dp)
                     .align(Alignment.CenterHorizontally),
-            ) {
-                CircularProgressIndicator(
-                    color = colorScheme.primary,
-                    modifier = Modifier
-                        .scale(.5f)
-                )
+
+                ) {
+                when (painter.state) {
+                    is AsyncImagePainter.State.Loading -> {
+                        CircularProgressIndicator(
+                            color = colorScheme.primary,
+                            modifier = Modifier
+                                .scale(.5f)
+                        )
+                    }
+                    is AsyncImagePainter.State.Success -> {
+                        // Extract the drawable safely
+                        val drawable = (painter.state as AsyncImagePainter.State.Success).result.drawable
+
+                        viewModel.calcDominantColor(drawable) { color ->
+                            dominantColor = color
+                        }
+
+                        SubcomposeAsyncImageContent()
+                    }
+                    is AsyncImagePainter.State.Error -> {
+                        Text("Image failed to load", color = Color.Red)
+                    }
+                    else -> Unit // Default case
+                }
             }
 
             Text(
