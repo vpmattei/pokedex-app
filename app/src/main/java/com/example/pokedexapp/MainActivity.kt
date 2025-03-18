@@ -18,9 +18,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.pokedexapp.pokemondetail.PokemonDetailScreen
+import com.example.pokedexapp.pokemondetail.PokemonDetailViewModel
 import com.example.pokedexapp.pokemonlist.PokemonListScreen
+import com.example.pokedexapp.repository.PokemonRepository
 import com.example.pokedexapp.ui.theme.PokedexAppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.Locale
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -69,6 +73,11 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             val pokemonName = remember {
                 it.arguments?.getString("pokemonName")
             }
+            PokemonDetailScreen(
+                dominantColor = dominantColor,
+                pokemonName = pokemonName?.lowercase(Locale.ROOT) ?: "",
+                navController = navController,
+            )
         }
     }
 }
@@ -77,6 +86,11 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun GreetingPreview() {
     PokedexAppTheme {
-        Greeting("Android")
+        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            Greeting(
+                name = "Android",
+                modifier = Modifier.padding(innerPadding)
+            )
+        }
     }
 }
