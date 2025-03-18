@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.Color
 val LightBlue = Color(0xFFBAC7FF)
 val lightGrey = Color(0xFFAAAAAA)
 
-val HPColor = Color(0xFFF5FF00)
+val HPColor = Color(0xFFFF7600)
 val AtkColor = Color(1f, 0f, 0f, 0.66f)
 val DefColor = Color(0f, 0f, 1f, 0.44f)
 val SpAtkColor = Color(0.671f, 0f, 1f, 0.57f)
