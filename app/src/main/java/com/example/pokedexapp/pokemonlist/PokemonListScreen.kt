@@ -157,7 +157,7 @@ fun PokemonList(
         modifier = Modifier.fillMaxSize()
     ) {
         if(isLoading) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            CircularProgressIndicator(color = colorScheme.primary)
         }
         if(loadError.isNotEmpty()) {
             RetrySection(error = loadError) {

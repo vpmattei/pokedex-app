@@ -5,6 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,10 +20,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +47,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -69,50 +75,54 @@ fun PokemonDetailScreen(
     val pokemonInfo = produceState<Resource<Pokemon>>(initialValue = Resource.Loading()) {
         value = viewModel.getPokemonInfo(pokemonName)
     }.value
+
+    // Load previous and next Pokémon *after* pokemonInfo is successfully loaded
+    LaunchedEffect(pokemonInfo) {
+        if (pokemonInfo is Resource.Success) {
+            viewModel.loadPreviousAndNextPokemons(pokemonInfo.data!!.id)
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(dominantColor)
-            .padding(
-                bottom = 16.dp
-            )
+            .padding(bottom = 16.dp)
     ) {
-        PokemonDetailTopSection(
-            navController = navController,
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(.2f)
-                .align(Alignment.TopCenter)
-        )
+        PokemonDetailTopSection(navController)
+
         PokemonDetailStateWrapper(
             pokemonInfo = pokemonInfo,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    top = topPadding + pokemonImageSize / 2,
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp
-                )
+                .padding(top = topPadding + pokemonImageSize / 2, start = 16.dp, end = 16.dp, bottom = 16.dp)
                 .shadow(10.dp, RoundedCornerShape(10.dp))
                 .clip(RoundedCornerShape(10.dp))
                 .background(MaterialTheme.colorScheme.surface)
-                .align(Alignment.BottomCenter),
+                .align(Alignment.BottomCenter)
+                .verticalScroll(rememberScrollState())
+            ,
             loadingModifier = Modifier
                 .size(100.dp)
                 .align(Center)
-                .padding(
-                    top = topPadding + pokemonImageSize / 2,
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp
-                )
+                .padding(top = topPadding + pokemonImageSize / 2),
+            navController = navController
         )
-        Box(
-            contentAlignment = Alignment.TopCenter,
+
+        PokemonDetailPreviousAndNextPokemon(
+            pokemonInfo = pokemonInfo,
+            navController = navController,
             modifier = Modifier
-                .fillMaxSize(),
-        ) {
+                .padding(
+                    start = 16.dp,
+                    end = 16.dp
+                )
+                .fillMaxWidth()
+                .fillMaxHeight(.5f)
+        )
+
+
+        Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize()) {
             if (pokemonInfo is Resource.Success) {
                 pokemonInfo.data?.sprites?.let {
                     SubcomposeAsyncImage(
@@ -155,7 +165,9 @@ fun PokemonDetailTopSection(
                 .size(36.dp)
                 .offset(16.dp, 64.dp)
                 .clickable {
-                    navController.popBackStack()
+                    navController.navigate(
+                        "pokemon_list_screen"
+                    )
                 }
         )
     }
@@ -165,23 +177,15 @@ fun PokemonDetailTopSection(
 fun PokemonDetailStateWrapper(
     pokemonInfo: Resource<Pokemon>,
     modifier: Modifier = Modifier,
-    loadingModifier: Modifier = Modifier
+    loadingModifier: Modifier = Modifier,
+    navController: NavController
 ) {
     when (pokemonInfo) {
         is Resource.Success -> {
-            var pokemon: String = ""
-            var pokemonColors: List<Color>
-            for (type in pokemonInfo.data!!.types) {
-                if (pokemon.isEmpty()) {
-                    pokemon = type.type.name.capitalize(Locale.ROOT)
-                } else {
-                    pokemon = pokemon + " | " + type.type.name.capitalize(Locale.ROOT)
-                }
-            }
             Column(
                 modifier = modifier
                     .padding(
-                        top = pokemonInfo.data.sprites.front_default.length.dp + 20.dp
+                        top = pokemonInfo.data!!.sprites.front_default.length.dp + 20.dp
                     )
 
             ) {
@@ -256,6 +260,74 @@ fun PokemonDetailStateWrapper(
             CircularProgressIndicator(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = loadingModifier
+            )
+        }
+    }
+}
+
+@Composable
+fun PokemonDetailPreviousAndNextPokemon(
+    pokemonInfo: Resource<Pokemon>,
+    navController: NavController,
+    viewModel: PokemonDetailViewModel = hiltViewModel(),
+    modifier: Modifier = Modifier
+) {
+    val previousPokemon = viewModel.getCachedPreviousPokemon()
+    val previousPokemonColor = viewModel.getCachedPreviousPokemonColor()
+
+    val nextPokemon = viewModel.getCachedNextPokemon()
+    val nextPokemonColor = viewModel.getCachedNextPokemonColor()
+
+    // Show arrows only if previous & next Pokémon are successfully loaded
+    when (pokemonInfo) {
+        is Resource.Success -> {
+
+            Box(modifier = modifier.fillMaxSize()) {
+
+                if(previousPokemon != null) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBackIosNew,
+                        contentDescription = "Previous Pokémon",
+                        tint = if (isSystemInDarkTheme()) Color.White else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .align(Alignment.CenterStart) // ✅ Fixed Position
+                            .padding(start = 16.dp)
+                            .clickable {
+                                navController.navigate(
+                                    "pokemon_detail_screen/${previousPokemonColor?.toArgb() ?: Color.Gray.toArgb()}/${previousPokemon!!.name}"
+                                )
+                            }
+                    )
+                }
+
+                if(nextPokemon != null) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowForwardIos,
+                        contentDescription = "Next Pokémon",
+                        tint = if (isSystemInDarkTheme()) Color.White else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .align(Alignment.CenterEnd) // ✅ Fixed Position
+                            .padding(end = 16.dp)
+                            .clickable {
+                                navController.navigate(
+                                    "pokemon_detail_screen/${nextPokemonColor?.toArgb() ?: Color.Gray.toArgb()}/${nextPokemon!!.name}"
+                                )
+                            }
+                    )
+                }
+            }
+        }
+        is Resource.Error -> {
+            Text(
+                text = pokemonInfo.message!!,
+                color = Color.Red,
+            )
+        }
+        is Resource.Loading -> {
+            CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.primary,
             )
         }
     }
