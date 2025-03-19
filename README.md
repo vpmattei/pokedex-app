@@ -1,5 +1,7 @@
 # 📱 Pokedex App
 
+![Showcase](https://raw.githubusercontent.com/vpmattei/pokedex-app/main/Showcase/Final%20Export/MainPhotoPokedexShowcase.png)
+
 Wanted to have your own Pokedex to check your favorite Poékmons and their stats? Well now you can become the best Pokémon trainer by having your own Pokedex!
 
 A simple but modern Pokémon Pokedex app built with **Jetpack Compose**, **Hilt for Dependency Injection**, and **Coil for Image Loading**!
