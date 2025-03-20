@@ -8,11 +8,8 @@ A simple but modern Pokémon Pokedex app built with **Jetpack Compose**, **Hilt 
 This app fetches Pokémon data from the PokéAPI and supports paginated scrolling, cached Pokémon lists, and smooth navigation between each Pokémon.
 
 ## 🚀 Features
-- 🔍 Search Pokémon by name or ID
-- 📜 Paginated list of Pokémon
-- 📸 Image loading with Coil
-- 🟢 Caching to preserve Pokémon list after navigation
-- ⚡ Hilt for Dependency Injection
+- 🔍 Search Pokémon by name
+- 📜 Paginated list of Pokémons
 - 🎨 Jetpack Compose UI with Material3
 
 ## 🛠️ Installation Instructions
