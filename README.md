@@ -79,10 +79,10 @@ Try running:
 
 ## 📸 Screenshots
 
-### Home Screen
+### Pokémon List Screen
 ![Home Screen](https://raw.githubusercontent.com/vpmattei/pokedex-app/main/Showcase/Final%20Export/PokemonListShowcase.png)
 
-### Pokémon Details
+### Pokémon Details Screen
 ![Venusaur](https://raw.githubusercontent.com/vpmattei/pokedex-app/main/Showcase/Final%20Export/VenusaurShowcase.png)
 ![Charizard](https://raw.githubusercontent.com/vpmattei/pokedex-app/main/Showcase/Final%20Export/CharizardShowcase.png)
 ![Blastoise](https://raw.githubusercontent.com/vpmattei/pokedex-app/main/Showcase/Final%20Export/BlastoiseShowcase.png)
